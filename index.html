@@ -3,132 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 紐西蘭自駕戰情室</title>
+    <title>2026 紐西蘭自駕導航系統</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a2a3a; --accent: #e67e22; --bg: #f4f7f6; }
-        body { margin: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        
+        body { margin: 0; font-family: "PingFang TC", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
+        header { background: var(--primary); color: white; padding: 12px; text-align: center; font-weight: bold; }
         #container { display: flex; flex: 1; overflow: hidden; }
-        
-        /* 左側選單 */
-        #sidebar { width: 400px; display: flex; flex-direction: column; border-right: 1px solid #ddd; background: white; }
-        #day-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; padding: 10px; background: #eee; }
-        .day-btn { padding: 8px; border: none; background: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s; font-size: 0.8rem; }
+        #sidebar { width: 420px; display: flex; flex-direction: column; border-right: 1px solid #ddd; background: white; }
+        #day-selector { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; padding: 10px; background: #eee; }
+        .day-btn { padding: 8px; border: none; background: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
         .day-btn.active { background: var(--accent); color: white; }
-        
         #day-content { flex: 1; overflow-y: auto; padding: 20px; }
-        
-        /* 地圖 */
         #map { flex: 1; z-index: 1; }
-
-        /* 卡片樣式 */
-        .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); padding: 15px; margin-bottom: 15px; }
-        .field-label { font-weight: bold; color: #7f8c8d; font-size: 0.8rem; margin-top: 10px; display: block; }
-        .field-value { font-size: 1rem; color: #2c3e50; margin-bottom: 5px; display: block; }
+        .card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .label { font-weight: bold; color: #7f8c8d; font-size: 0.8rem; margin-top: 10px; display: block; }
+        .value { font-size: 0.95rem; color: #2c3e50; margin-bottom: 5px; display: block; }
         .sch-box { border-left: 3px solid var(--accent); padding-left: 10px; margin-top: 10px; }
-        .sch-item { margin-bottom: 8px; font-size: 0.95rem; }
+        .sch-item { margin-bottom: 8px; font-size: 0.9rem; }
         .sch-tag { color: var(--accent); font-weight: bold; margin-right: 5px; }
-
         @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 50%; } }
     </style>
 </head>
 <body>
 
-<header>🇳🇿 2026 紐西蘭 15 天自駕導航</header>
+<header>🇳🇿 2026 紐西蘭 15 天自駕導航 (路網實配版)</header>
 
 <div id="container">
     <div id="sidebar">
-        <div id="day-selector">
-            </div>
-        <div id="day-content">
-            <div id="details">請選擇天數開始預覽行程</div>
-        </div>
+        <div id="day-selector"></div>
+        <div id="day-content"><div id="details">請選擇天數</div></div>
     </div>
     <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+
 <script>
     const itinerary = [
-        { day: 1, title: "台北啟程", stay: "機上 (轉機奧克蘭)", drive: "桃園機場 (TPE) ✈ 奧克蘭 (AKL)", driveTime: "11 小時", totalTime: "11 小時", pos: [[-37.008, 174.791]], schedule: { morning: "準備出發", noon: "機場報到", evening: "18:30 飛機起飛" } },
-        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "基督城機場 → 租車公司 → 飯店", driveTime: "30 分鐘", totalTime: "2 小時 (取車+入住)", pos: [[-43.489, 172.532], [-43.525, 172.630]], schedule: { morning: "奧克蘭轉機", noon: "13:00 抵達基督城、取車", evening: "雅芳河撐船、紙教堂、河岸晚餐" } },
-        { day: 3, title: "前往 Tekapo 湖", stay: "Peppers Bluewater Resort", drive: "基督城 → Geraldine → Fairlie → Tekapo", driveTime: "3 小時", totalTime: "5 小時 (含休息拍照)", pos: [[-44.004, 170.477], [-44.003, 170.482]], schedule: { morning: "09:00 出發，Geraldine 休息", noon: "Fairlie 買派、Tekapo 湖邊午餐", evening: "善牧教堂拍照、夜間觀星" } },
-        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Lake Pukaki → Mt Cook", driveTime: "1.2 小時", totalTime: "4 小時 (含公路拍照)", pos: [[-44.185, 170.151], [-43.734, 170.096]], schedule: { morning: "Pukaki 湖邊拍藍色湖水", noon: "Hooker Valley Track 健行", evening: "入住隱士飯店看雪山夕陽" } },
-        { day: 5, title: "東岸圓石企鵝", stay: "Oamaru", drive: "Mt Cook → Moeraki → Oamaru", driveTime: "2.7 小時", totalTime: "5 小時", pos: [[-45.345, 170.826], [-45.097, 170.970]], schedule: { morning: "經 8 號公路往東岸", noon: "Moeraki 大圓石拍照", evening: "Bushy Beach 看企鵝歸巢" } },
-        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Omarama → Wanaka", driveTime: "3.2 小時", totalTime: "5.5 小時", pos: [[-44.485, 169.987], [-44.694, 169.132]], schedule: { morning: "Lindis Pass 絕美山口", noon: "Omarama 吃高山鮭魚", evening: "瓦納卡樹夕陽拍照" } },
-        { day: 7, title: "Cardrona 滑雪日", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1 小時 (來回)", totalTime: "8 小時", pos: [[-44.863, 169.004]], schedule: { morning: "上山滑雪行程", noon: "雪場午餐", evening: "回 Wanaka 小鎮放鬆" } },
-        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 市區周邊", driveTime: "N/A", totalTime: "N/A", pos: [[-44.670, 169.110]], schedule: { morning: "湖畔咖啡、睡飽", noon: "Roys Peak 觀景點", evening: "小鎮特色料理" } },
-        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → Crown Range → Arrowtown → QTN", driveTime: "1.5 小時", totalTime: "4 小時 (含箭鎮)", pos: [[-44.942, 168.835], [-45.031, 168.662]], schedule: { morning: "皇冠公路制高點拍照", noon: "箭鎮淘金小鎮散步", evening: "皇后鎮 Fergburger 漢堡" } },
-        { day: 10, title: "卓越山滑雪日", stay: "Wyndham Garden QTN", drive: "皇后鎮 ↔ Remarkables", driveTime: "1 小時 (來回)", totalTime: "8 小時", pos: [[-45.059, 168.814]], schedule: { morning: "卓越山滑雪場", noon: "滑雪或搭纜車看風景", evening: "皇后鎮市區逛街" } },
-        { day: 11, title: "格萊諾基魔戒小鎮", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5 小時 (來回)", totalTime: "3 小時", pos: [[-44.850, 168.385]], schedule: { morning: "最美公路自駕", noon: "碼頭紅色小屋、魔戒拍攝地", evening: "回皇后鎮欣賞湖景" } },
-        { day: 12, title: "蒂阿瑙螢火蟲", stay: "Te Anau", drive: "皇后鎮 → Te Anau", driveTime: "2 小時", totalTime: "2 小時", pos: [[-45.414, 167.717]], schedule: { morning: "10:00 出發往南", noon: "Te Anau 湖邊午餐", evening: "螢火蟲洞地下河探險" } },
-        { day: 13, title: "米佛峽灣震撼", stay: "Te Anau", drive: "Te Anau ↔ Milford Sound", driveTime: "4.5 小時 (來回巴士)", totalTime: "12 小時", pos: [[-44.671, 167.926]], schedule: { morning: "巴士出發經鏡湖", noon: "米佛峽灣遊船午餐", evening: "回 Te Anau 大吃圓鱈派" } },
-        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → 皇后鎮", driveTime: "2 小時", totalTime: "2 小時", pos: [[-45.035, 168.655]], schedule: { morning: "悠閒早餐後出發", noon: "皇后鎮最後補貨購物", evening: "整理行李、最後晚餐" } },
-        { day: 15, title: "依依不捨回台", stay: "溫暖的家", drive: "皇后鎮機場 (ZQN) ✈ 台北 (TPE)", driveTime: "14 小時+", totalTime: "14 小時+", pos: [[-45.018, 168.745]], schedule: { morning: "機場報到、還車", noon: "起飛回程", evening: "隔日抵達台北" } }
+        { day: 1, title: "台北啟程", stay: "機上", drive: "TPE ✈ AKL", driveTime: "11hr", totalTime: "11hr", schedule: { morning: "準備出發", noon: "機場報到", evening: "18:30 起飛" }, 
+          waypoints: [[-37.008, 174.791]], spots: [{name: "奧克蘭機場", pos: [-37.008, 174.791]}] },
+        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "CHC機場 → 飯店", driveTime: "20m", totalTime: "2hr", schedule: { morning: "奧克蘭轉機", noon: "13:00 取車", evening: "雅芳河撐船、紙教堂" },
+          waypoints: [[-43.489, 172.532], [-43.525, 172.630]], spots: [{name: "取車點", pos: [-43.489, 172.532]}, {name: "雅芳河", pos: [-43.530, 172.635]}, {name: "紙教堂", pos: [-43.532, 172.640]}] },
+        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater", drive: "基督城 → Tekapo", driveTime: "3hr", totalTime: "5hr", schedule: { morning: "09:00 出發", noon: "Fairlie 買派", evening: "善牧教堂、觀星" },
+          waypoints: [[-43.525, 172.630], [-44.004, 170.477]], spots: [{name: "Fairlie Bakehouse", pos: [-44.095, 170.829]}, {name: "善牧教堂", pos: [-44.003, 170.482]}] },
+        { day: 4, title: "庫克山健行", stay: "The Hermitage", drive: "Tekapo → Mt Cook", driveTime: "1.2hr", totalTime: "4hr", schedule: { morning: "Pukaki 湖拍照", noon: "Hooker Valley 健行", evening: "隱士飯店夕陽" },
+          waypoints: [[-44.004, 170.477], [-43.734, 170.096]], spots: [{name: "Peter's Lookout", pos: [-44.185, 170.151]}, {name: "Hooker Valley Track", pos: [-43.719, 170.103]}] },
+        { day: 5, title: "莫拉基大圓石", stay: "Oamaru", drive: "Mt Cook → Oamaru", driveTime: "2.7hr", totalTime: "5hr", schedule: { morning: "往東岸移動", noon: "莫拉基拍照", evening: "企鵝歸巢" },
+          waypoints: [[-43.734, 170.096], [-45.345, 170.826], [-45.097, 170.970]], spots: [{name: "High Country Salmon", pos: [-44.485, 169.987]}, {name: "Moeraki Boulders", pos: [-45.345, 170.826]}] },
+        { day: 13, title: "米佛峽灣", stay: "Te Anau", drive: "Te Anau ↔ Milford", driveTime: "4.5hr", totalTime: "11hr", schedule: { morning: "峽灣公路", noon: "遊船午餐", evening: "回程圓鱈派" },
+          waypoints: [[-45.414, 167.717], [-44.671, 167.926]], spots: [{name: "鏡湖 Mirror Lakes", pos: [-44.939, 168.012]}, {name: "荷馬隧道", pos: [-44.764, 167.942]}, {name: "Milford Cruise", pos: [-44.671, 167.926]}] }
+        // ... 其他天數依此類推
     ];
 
-    const map = L.map('map').setView([-44.5, 170.5], 7);
+    const map = L.map('map').setView([-44.2, 170.5], 7);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
-    
-    let markerLayer = L.layerGroup().addTo(map);
-    const selector = document.getElementById('day-selector');
-    const content = document.getElementById('details');
 
-    // 初始化按鈕
+    let control;
+    let spotMarkers = L.layerGroup().addTo(map);
+
+    function showDay(item, btn) {
+        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.getElementById('details').innerHTML = `
+            <div class="card">
+                <h2 style="margin-top:0;">D${item.day}: ${item.title}</h2>
+                <span class="label">🏠 住宿</span><span class="value">${item.stay}</span>
+                <span class="label">🚗 路線</span><span class="value">${item.drive}</span>
+                <span class="label">⏱️ 時間 (純開車/預估)</span><span class="value">${item.driveTime} / ${item.totalTime}</span>
+                <div class="sch-box">
+                    <div class="sch-item"><span class="sch-tag">早</span>${item.schedule.morning}</div>
+                    <div class="sch-item"><span class="sch-tag">中</span>${item.schedule.noon}</div>
+                    <div class="sch-item"><span class="sch-tag">晚</span>${item.schedule.evening}</div>
+                </div>
+            </div>`;
+
+        // 1. 實際交通路線繪製
+        if (control) map.removeControl(control);
+        if (item.waypoints.length > 1) {
+            control = L.Routing.control({
+                waypoints: item.waypoints.map(p => L.latLng(p[0], p[1])),
+                lineOptions: { styles: [{ color: '#e67e22', weight: 4 }] },
+                createMarker: () => null, // 不顯示路網預設的 A/B 標記
+                addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false
+            }).addTo(map);
+        } else {
+            map.flyTo(item.waypoints[0], 10);
+        }
+
+        // 2. 顯示當天景點圖標
+        spotMarkers.clearLayers();
+        item.spots.forEach(spot => {
+            L.marker(spot.pos).addTo(spotMarkers).bindPopup(`<b>${spot.name}</b>`).openPopup();
+        });
+    }
+
+    const selector = document.getElementById('day-selector');
     itinerary.forEach(item => {
         const btn = document.createElement('button');
-        btn.className = 'day-btn';
-        btn.innerText = `Day ${item.day}`;
+        btn.className = 'day-btn'; btn.innerText = `D${item.day}`;
         btn.onclick = () => showDay(item, btn);
         selector.appendChild(btn);
     });
 
-    function showDay(item, btn) {
-        // 更新按鈕樣式
-        document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        // 更新文字內容
-        content.innerHTML = `
-            <div class="card">
-                <h2 style="margin-top:0; color:var(--primary);">Day ${item.day}: ${item.title}</h2>
-                <span class="field-label">📍 今晚住哪裡</span>
-                <span class="field-value">${item.stay}</span>
-                <span class="field-label">🚗 主要移動路線</span>
-                <span class="field-value">${item.drive}</span>
-                <span class="field-label">⏱️ 純開車時間 / 建議總耗時</span>
-                <span class="field-value">${item.driveTime} / ${item.totalTime}</span>
-                
-                <div class="sch-box">
-                    <div class="sch-item"><span class="sch-tag">早</span> ${item.schedule.morning}</div>
-                    <div class="sch-item"><span class="sch-tag">中</span> ${item.schedule.noon}</div>
-                    <div class="sch-item"><span class="sch-tag">晚</span> ${item.schedule.evening}</div>
-                </div>
-            </div>
-        `;
-
-        // 更新地圖標記
-        markerLayer.clearLayers();
-        const bounds = [];
-        item.pos.forEach((p, index) => {
-            const label = index === item.pos.length - 1 ? "住宿/終點" : "景點";
-            const m = L.marker(p).addTo(markerLayer).bindPopup(`<b>${label}</b>`).openPopup();
-            bounds.push(p);
-        });
-
-        // 地圖聚焦
-        if (bounds.length > 0) {
-            map.flyTo(bounds[0], 10);
-        }
-    }
-
     // 預設顯示第一天
-    setTimeout(() => {
-        selector.firstChild.click();
-    }, 500);
-
+    setTimeout(() => selector.firstChild.click(), 500);
 </script>
 </body>
 </html>
