@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 紐西蘭自駕戰情室</title>
+    <title>2026 紐西蘭 15 天全行程手冊</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #1a2a3a; --accent: #e67e22; --bg: #f8f9fa; }
@@ -33,9 +33,6 @@
 
 <div id="container">
     <div id="sidebar">
-        <div style="background: #e1f5fe; padding: 15px; font-size: 0.85rem; border-bottom: 1px solid #b3e5fc;">
-            📌 <b>旅程概要：</b>基督城進、皇后鎮出。重點包含庫克山健行、米佛峽灣與兩大雪場滑雪。
-        </div>
         <div id="itinerary-list"></div>
     </div>
     <div id="map"></div>
@@ -44,40 +41,40 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
     const itinerary = [
-        { day: 1, title: "台北啟程", stay: "機上 (奧克蘭轉機)", drive: "TPE ✈ AKL", driveTime: "11 hr", totalTime: "11 hr", pos: [-37.008, 174.791], schedule: { morning: "準備行李與心情", noon: "前往機場", evening: "18:30 飛往奧克蘭" } },
-        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "CHC 機場 → 市區", driveTime: "20 min", totalTime: "1.5 hr", pos: [-43.532, 172.636], schedule: { morning: "飛抵奧克蘭轉機", noon: "13:00 抵達基督城並取車", evening: "雅芳河撐船、植物園散步、紙教堂" } },
-        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater Resort", drive: "基督城 → Tekapo", driveTime: "3 hr", totalTime: "5 hr", pos: [-44.004, 170.477], schedule: { morning: "09:00 出發，經 Fairlie 買派", noon: "湖邊午餐、善牧教堂", evening: "觀星行程 (視天氣)" } },
-        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Mt Cook", driveTime: "1.2 hr", totalTime: "3 hr", pos: [-43.734, 170.096], schedule: { morning: "09:30 出發，Peter's Lookout 拍照", noon: "11:15 Hooker Valley Track 健行", evening: "入住隱士飯店享受景觀" } },
-        { day: 5, title: "東岸圓石企鵝", stay: "Oamaru 市區", drive: "Mt Cook → Oamaru", driveTime: "2.7 hr", totalTime: "5 hr", pos: [-45.097, 170.970], schedule: { morning: "09:30 出發前往莫拉基", noon: "12:30 大圓石、維多利亞區", evening: "Bushy Beach 與藍企鵝歸巢" } },
-        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2 hr", totalTime: "5.5 hr", pos: [-44.694, 169.132], schedule: { morning: "09:00 出發，經 Lindis Pass", noon: "Omarama 吃鮭魚、Cromwell 補給", evening: "That Wanaka Tree 夕陽" } },
-        { day: 7, title: "Cardrona 滑雪", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1 hr", totalTime: "1 hr", pos: [-44.863, 169.004], schedule: { morning: "接駁上山或自駕前往雪場", noon: "滑雪體驗 / 薰衣草農場", evening: "Wanaka 小鎮晚餐" } },
-        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 周邊", driveTime: "N/A", totalTime: "N/A", pos: [-44.670, 169.110], schedule: { morning: "睡到自然醒，湖畔咖啡", noon: "Roys Peak 下方景點拍照", evening: "小鎮悠閒漫步" } },
-        { day: 9, title: "皇冠公路至皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → QTN", driveTime: "1.2 hr", totalTime: "2.5 hr", pos: [-45.031, 168.662], schedule: { morning: "經皇冠公路，箭鎮散步", noon: "抵達皇后鎮入住", evening: "湖邊散步、買 Fergburger" } },
-        { day: 10, title: "卓越山滑雪", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1 hr", totalTime: "1 hr", pos: [-45.059, 168.814], schedule: { morning: "卓越山滑雪場", noon: "滑雪 / Skyline 纜車與 Luge", evening: "皇后鎮大餐慶祝" } },
-        { day: 11, title: "格萊諾基冒險", stay: "Wyndham Garden QTN", drive: "皇后鎮 ↔ Glenorchy", driveTime: "1.5 hr", totalTime: "2.5 hr", pos: [-44.850, 168.385], schedule: { morning: "09:30 出發，沿湖拍照", noon: "Glenorchy 碼頭、紅色小屋", evening: "回皇后鎮休息" } },
-        { day: 12, title: "蒂阿瑙螢火蟲", stay: "Te Anau 飯店", drive: "皇后鎮 → Te Anau", driveTime: "2 hr", totalTime: "2 hr", pos: [-45.414, 167.717], schedule: { morning: "10:00 出發前往峽灣門戶", noon: "Te Anau 湖邊午餐", evening: "19:00 螢火蟲洞導覽" } },
-        { day: 13, title: "米佛峽灣一日", stay: "Te Anau 飯店", drive: "Te Anau ↔ Milford", driveTime: "4.5 hr", totalTime: "12 hr", pos: [-44.671, 167.926], schedule: { morning: "07:00 巴士出發", noon: "米佛峽灣遊船", evening: "19:00 回到飯店" } },
-        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → QTN", driveTime: "2 hr", totalTime: "2 hr", pos: [-45.035, 168.655], schedule: { morning: "09:30 出發，最後補貨", noon: "抵達皇后鎮，市區採買", evening: "整理行李，早睡準備回程" } },
-        { day: 15, title: "依依不捨回台", stay: "溫暖的家", drive: "ZQN ✈ TPE", driveTime: "12 hr+", totalTime: "12 hr+", pos: [-45.018, 168.745], schedule: { morning: "07:00 ZQN 機場報到", noon: "奧克蘭轉機", evening: "抵達台北" } }
+        { day: 1, title: "台北啟程", stay: "機上", drive: "TPE ✈ AKL", driveTime: "11 hr", totalTime: "11 hr", pos: [-37.008, 174.791], schedule: { morning: "行李最後檢查", noon: "前往機場", evening: "18:30 起飛" } },
+        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "機場 → 市區", driveTime: "20 min", totalTime: "1.5 hr", pos: [-43.532, 172.636], schedule: { morning: "奧克蘭轉機", noon: "13:00 抵達取車", evening: "雅芳河撐船、紙教堂" } },
+        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater Resort", drive: "基督城 → Tekapo", driveTime: "3 hr", totalTime: "5 hr", pos: [-44.004, 170.477], schedule: { morning: "09:00 出發經 Fairlie", noon: "湖邊午餐、善牧教堂", evening: "星空觀星" } },
+        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Mt Cook", driveTime: "1.2 hr", totalTime: "3 hr", pos: [-43.734, 170.096], schedule: { morning: "09:30 冰河公路", noon: "Hooker Valley 健行", evening: "飯店景觀晚餐" } },
+        { day: 5, title: "東岸圓石企鵝", stay: "Oamaru", drive: "Mt Cook → Oamaru", driveTime: "2.7 hr", totalTime: "5 hr", pos: [-45.097, 170.970], schedule: { morning: "前往莫拉基", noon: "大圓石退潮拍攝", evening: "企鵝歸巢觀賞" } },
+        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2 hr", totalTime: "5.5 hr", pos: [-44.694, 169.132], schedule: { morning: "Lindis Pass 隘口", noon: "吃高山鮭魚", evening: "瓦納卡樹夕陽" } },
+        { day: 7, title: "Cardrona 滑雪", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1 hr", totalTime: "1 hr", pos: [-44.863, 169.004], schedule: { morning: "雪場報到", noon: "滑雪體驗", evening: "Wanaka 晚餐" } },
+        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 周邊", driveTime: "N/A", totalTime: "N/A", pos: [-44.670, 169.110], schedule: { morning: "睡飽飽", noon: "Roys Peak 拍照", evening: "湖畔散步" } },
+        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → QTN", driveTime: "1.2 hr", totalTime: "2.5 hr", pos: [-45.031, 168.662], schedule: { morning: "皇冠公路、箭鎮", noon: "皇后鎮入住", evening: "湖邊漢堡行程" } },
+        { day: 10, title: "卓越山滑雪", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1 hr", totalTime: "1 hr", pos: [-45.059, 168.814], schedule: { morning: "卓越山滑雪場", noon: "滑雪 / 纜車", evening: "皇后鎮大餐" } },
+        { day: 11, title: "格萊諾基冒險", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5 hr", totalTime: "2.5 hr", pos: [-44.850, 168.385], schedule: { morning: "最美公路自駕", noon: "碼頭紅色小屋", evening: "回皇后鎮" } },
+        { day: 12, title: "蒂阿瑙螢火蟲", stay: "Te Anau", drive: "皇后鎮 → Te Anau", driveTime: "2 hr", totalTime: "2 hr", pos: [-45.414, 167.717], schedule: { morning: "往南移動", noon: "Te Anau 湖午餐", evening: "螢火蟲洞導覽" } },
+        { day: 13, title: "米佛峽灣", stay: "Te Anau", drive: "Te Anau ↔ Milford", driveTime: "4.5 hr", totalTime: "12 hr", pos: [-44.671, 167.926], schedule: { morning: "早起搭船", noon: "峽灣遊船", evening: "回程圓鱈派" } },
+        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → QTN", driveTime: "2 hr", totalTime: "2 hr", pos: [-45.035, 168.655], schedule: { morning: "悠閒出發", noon: "皇后鎮採買", evening: "整理行李" } },
+        { day: 15, title: "依依不捨回台", stay: "溫暖的家", drive: "ZQN ✈ TPE", driveTime: "12 hr+", totalTime: "12 hr+", pos: [-45.018, 168.745], schedule: { morning: "機場報到", noon: "空中飛行", evening: "抵達台北" } }
     ];
 
-    const map = L.map('map').setView([-44.2, 170.5], 7);
+    const map = L.map('map').setView([-44.5, 170.5], 7);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
     const sidebar = document.getElementById('itinerary-list');
 
     itinerary.forEach((item) => {
-        const marker = L.marker(item.pos).addTo(map).bindPopup(`<b>Day ${item.day}: ${item.title}</b>`);
+        const marker = L.marker(item.pos).addTo(map).bindPopup(`<b>D${item.day}: ${item.title}</b>`);
         const card = document.createElement('div');
         card.className = 'day-box';
         card.id = `card-${item.day}`;
         card.innerHTML = `
             <div class="day-header"><span class="day-label">DAY ${item.day}</span><span class="stay-label">📍 住：${item.stay}</span></div>
             <div style="font-weight:bold; font-size:1.1rem;">${item.title}</div>
-            <div class="info-grid"><div class="info-item"><b>🚗 路線</b>${item.drive}</div><div class="info-item"><b>⏳ 純開車 / 含停靠</b>${item.driveTime} / ${item.totalTime}</div></div>
+            <div class="info-grid"><div class="info-item"><b>🚗 路線</b>${item.drive}</div><div class="info-item"><b>⏳ 純開車/含停</b>${item.driveTime} / ${item.totalTime}</div></div>
             <div class="schedule-section">
-                <div class="sch-item"><span class="sch-time">早上</span>${item.schedule.morning}</div>
-                <div class="sch-item"><span class="sch-time">中午</span>${item.schedule.noon}</div>
-                <div class="sch-item"><span class="sch-time">晚上</span>${item.schedule.evening}</div>
+                <div class="sch-item"><span class="sch-time">早</span>${item.schedule.morning}</div>
+                <div class="sch-item"><span class="sch-time">中</span>${item.schedule.noon}</div>
+                <div class="sch-item"><span class="sch-time">晚</span>${item.schedule.evening}</div>
             </div>`;
         card.onclick = () => { map.flyTo(item.pos, 11); marker.openPopup(); document.querySelectorAll('.day-box').forEach(b => b.classList.remove('active-day')); card.classList.add('active-day'); };
         sidebar.appendChild(card);
