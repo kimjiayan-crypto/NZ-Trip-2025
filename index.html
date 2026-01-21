@@ -8,7 +8,7 @@
     <style>
         :root { --primary: #1a2a3a; --accent: #e67e22; --bg: #f4f7f6; --airport: #3498db; --hotel: #27ae60; --spot: #f39c12; --start: #9b59b6; }
         body { margin: 0; font-family: "PingFang TC", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); overflow: hidden; }
-        header { background: var(--primary); color: white; padding: 10px; text-align: center; font-weight: bold; z-index: 1005; height: 40px; }
+        header { background: var(--primary); color: white; padding: 10px; text-align: center; font-weight: bold; height: 40px; z-index: 1005; }
         
         #main-layout { display: flex; flex: 1; overflow: hidden; height: calc(100vh - 60px); }
         
@@ -22,16 +22,15 @@
         #right-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
         
         /* 右上：地圖 */
-        #map { height: 45%; width: 100%; z-index: 1; border-bottom: 2px solid #ddd; }
+        #map { height: 50%; width: 100%; z-index: 1; border-bottom: 2px solid #ddd; }
         
-        /* 右下：行程詳情 */
-        #sidebar-content { height: 55%; overflow-y: auto; background: white; padding: 15px; }
+        /* 右下：行程詳情 (無照片版) */
+        #sidebar-content { height: 50%; overflow-y: auto; background: white; padding: 20px; }
         
         .card { max-width: 800px; margin: 0 auto; }
-        .spot-img { width: 100%; max-height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
         .label { font-weight: bold; color: #7f8c8d; font-size: 0.85rem; margin-top: 12px; display: block; }
         .value { font-size: 1rem; color: #2c3e50; margin-bottom: 5px; display: block; font-weight: 500; }
-        .sch-box { border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 15px; background: #fdfdfd; padding: 10px 15px; }
+        .sch-box { border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 15px; background: #fdfdfd; padding: 10px 15px; border-radius: 0 8px 8px 0; }
         .sch-item { margin-bottom: 10px; font-size: 0.95rem; line-height: 1.5; }
         .sch-tag { color: var(--accent); font-weight: bold; margin-right: 10px; }
 
@@ -40,13 +39,13 @@
 
         @media (max-width: 768px) {
             #day-nav { width: 60px; }
-            #sidebar-content { padding: 10px; }
+            #sidebar-content { padding: 15px; }
         }
     </style>
 </head>
 <body>
 
-<header>🇳🇿 2026 紐西蘭南島 15 天自駕導航系統</header>
+<header>🇳🇿 2026 紐西蘭自駕戰情室</header>
 
 <div id="main-layout">
     <nav id="day-nav">
@@ -66,21 +65,21 @@
 
 <script>
     const itinerary = [
-        { day: 1, title: "台北啟程", stay: "機上", drive: "TPE ✈ AKL", driveTime: "11hr", totalTime: "11hr", img: "https://images.unsplash.com/photo-1520437358207-323b43b50729?w=800", schedule: { morning: "行李最後確認", noon: "18:30 桃園機場起飛", evening: "機上休息" }, waypoints: [[25.079, 121.234], [-37.008, 174.791]], spots: [{name: "桃園機場", type: "起", pos: [25.079, 121.234]}, {name: "奧克蘭機場", type: "住", pos: [-37.008, 174.791]}] },
-        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "機場 → 基督城市區", driveTime: "20m", totalTime: "2hr", img: "https://images.unsplash.com/photo-1510253687831-0f982d7862fc?w=800", schedule: { morning: "奧克蘭轉機", noon: "13:00 抵達並取車", evening: "雅芳河撐船、紙教堂、河岸夕陽" }, waypoints: [[-43.489, 172.532], [-43.525, 172.630]], spots: [{name: "基督城機場", type: "起", pos: [-43.489, 172.532]}, {name: "雅芳河", type: "📷", pos: [-43.530, 172.635]}, {name: "B&B 住宿", type: "住", pos: [-43.525, 172.630]}] },
-        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater Resort", drive: "基督城 → Tekapo", driveTime: "3hr", totalTime: "5hr", img: "https://images.unsplash.com/photo-1469521669194-bdf960598506?w=800", schedule: { morning: "09:00 出發經 Fairlie 買派", noon: "湖邊午餐、善牧教堂散步", evening: "入住飯店、觀星行程" }, waypoints: [[-43.525, 172.630], [-44.095, 170.829], [-44.004, 170.477]], spots: [{name: "出發點", type: "起", pos: [-43.525, 172.630]}, {name: "善牧教堂", type: "📷", pos: [-44.003, 170.482]}, {name: "Tekapo 住宿", type: "住", pos: [-44.004, 170.477]}] },
-        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Mt Cook", driveTime: "1.2hr", totalTime: "4hr", img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800", schedule: { morning: "09:30 經 Pukaki 湖拍照", noon: "Hooker Valley Track 健行", evening: "隱士飯店享受景觀" }, waypoints: [[-44.004, 170.477], [-44.185, 170.151], [-43.734, 170.096]], spots: [{name: "Tekapo", type: "起", pos: [-44.004, 170.477]}, {name: "Peter's Lookout", type: "📷", pos: [-44.185, 170.151]}, {name: "隱士飯店", type: "住", pos: [-43.734, 170.096]}] },
-        { day: 5, title: "圓石與企鵝", stay: "Oamaru 市區", drive: "Mt Cook → Oamaru", driveTime: "2.7hr", totalTime: "5hr", img: "https://images.unsplash.com/photo-1621692197500-264775d71ba8?w=800", schedule: { morning: "移動至東岸", noon: "Moeraki 大圓石拍照", evening: "Bushy Beach 看企鵝、藍企鵝歸巢" }, waypoints: [[-43.734, 170.096], [-45.345, 170.826], [-45.097, 170.970]], spots: [{name: "庫克山", type: "起", pos: [-43.734, 170.096]}, {name: "大圓石", type: "📷", pos: [-45.345, 170.826]}, {name: "Oamaru 住宿", type: "住", pos: [-45.097, 170.970]}] },
-        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2hr", totalTime: "5.5hr", img: "https://images.unsplash.com/photo-1507666405821-4223963035c9?w=800", schedule: { morning: "Lindis Pass 攝影天堂", noon: "Omarama 吃鮭魚生魚片", evening: "那棵樹 That Wanaka Tree 夕陽" }, waypoints: [[-45.097, 170.970], [-44.485, 169.987], [-44.694, 169.132]], spots: [{name: "Oamaru", type: "起", pos: [-45.097, 170.970]}, {name: "高山鮭魚", type: "📷", pos: [-44.485, 169.987]}, {name: "Edgewater", type: "住", pos: [-44.694, 169.132]}] },
-        { day: 7, title: "Cardrona 滑雪", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1hr", totalTime: "8hr", img: "https://images.unsplash.com/photo-1551698618-1fed5d97550e?w=800", schedule: { morning: "接駁上山滑雪", noon: "滑雪體驗 / 薰衣草農場", evening: "回 Wanaka 小鎮晚餐" }, waypoints: [[-44.694, 169.132], [-44.863, 169.004]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "Cardrona", type: "📷", pos: [-44.863, 169.004]}] },
-        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 周邊", driveTime: "N/A", totalTime: "N/A", img: "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?w=800", schedule: { morning: "湖畔散步、睡飽", noon: "Roys Peak 觀景點拍照", evening: "小鎮特色料理" }, waypoints: [[-44.694, 169.132]], spots: [{name: "瓦納卡樹", type: "📷", pos: [-44.670, 169.110]}] },
-        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → 皇后鎮", driveTime: "1.5hr", totalTime: "3hr", img: "https://images.unsplash.com/photo-1589871146128-db2d688af150?w=800", schedule: { morning: "經皇冠公路、箭鎮散步", noon: "皇后鎮入住", evening: "Fergburger 漢堡、湖邊走走" }, waypoints: [[-44.694, 169.132], [-44.942, 168.835], [-45.031, 168.662]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "箭鎮", type: "📷", pos: [-44.942, 168.835]}, {name: "Wyndham", type: "住", pos: [-45.031, 168.662]}] },
-        { day: 10, title: "卓越山滑雪", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1hr", totalTime: "8hr", img: "https://images.unsplash.com/photo-1482867996988-29ec3aee816d?w=800", schedule: { morning: "卓越山滑雪場", noon: "滑雪 / Skyline 纜車與 Luge", evening: "市區大餐慶祝" }, waypoints: [[-45.031, 168.662], [-45.059, 168.814]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "卓越山", type: "📷", pos: [-45.059, 168.814]}] },
-        { day: 11, title: "格萊諾基", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5hr", totalTime: "3hr", img: "https://images.unsplash.com/photo-1502139214982-d0ad755818d8?w=800", schedule: { morning: "09:30 最美公路自駕", noon: "Glenorchy Wharf 拍照", evening: "回到皇后鎮休息" }, waypoints: [[-45.031, 168.662], [-44.850, 168.385]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "紅色小屋", type: "📷", pos: [-44.850, 168.385]}] },
-        { day: 12, title: "蒂阿瑙", stay: "Te Anau 飯店", drive: "皇后鎮 → Te Anau", driveTime: "2hr", totalTime: "2hr", img: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800", schedule: { morning: "10:00 出發往南", noon: "Te Anau 湖邊午餐", evening: "19:00 螢火蟲洞導覽探險" }, waypoints: [[-45.031, 168.662], [-45.414, 167.717]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "Te Anau", type: "住", pos: [-45.414, 167.717]}] },
-        { day: 13, title: "米佛峽灣", stay: "Te Anau 飯店", drive: "Te Anau ↔ Milford", driveTime: "4.5hr", totalTime: "12hr", img: "https://images.unsplash.com/photo-1415018255745-0ec3f7aee47b?w=800", schedule: { morning: "07:00 巴士經鏡湖", noon: "米佛峽灣遊船午餐", evening: "回到 Te Anau 吃圓鱈派" }, waypoints: [[-45.414, 167.717], [-44.939, 168.012], [-44.671, 167.926]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "鏡湖", type: "📷", pos: [-44.939, 168.012]}, {name: "米佛遊船", type: "📷", pos: [-44.671, 167.926]}] },
-        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → 皇后鎮", driveTime: "2hr", totalTime: "2hr", img: "https://images.unsplash.com/photo-1544198365-f5d60b6d8190?w=800", schedule: { morning: "悠閒早餐出發", noon: "市區最後採買伴手禮", evening: "整理行李準備回程" }, waypoints: [[-45.414, 167.717], [-45.035, 168.655]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "皇后鎮", type: "住", pos: [-45.035, 168.655]}] },
-        { day: 15, title: "回程台北", stay: "溫暖的家", drive: "ZQN ✈ TPE", driveTime: "12hr+", totalTime: "12hr+", img: "https://images.unsplash.com/photo-1464013778555-8e723c2f01f8?w=800", schedule: { morning: "07:00 機場報到", noon: "經奧克蘭轉機", evening: "抵達台北" }, waypoints: [[-45.035, 168.655], [-45.018, 168.745]], spots: [{name: "皇后鎮市區", type: "起", pos: [-45.035, 168.655]}, {name: "ZQN 機場", type: "✈️", pos: [-45.018, 168.745]}] }
+        { day: 1, title: "台北啟程", stay: "機上 (奧克蘭轉機)", drive: "TPE ✈ AKL", driveTime: "11hr", totalTime: "11hr", schedule: { morning: "行李最後確認", noon: "18:30 桃園機場起飛", evening: "機上休息" }, waypoints: [[25.079, 121.234], [-37.008, 174.791]], spots: [{name: "桃園機場", type: "起", pos: [25.079, 121.234]}, {name: "奧克蘭機場", type: "住", pos: [-37.008, 174.791]}] },
+        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "機場 → 基督城市區", driveTime: "20m", totalTime: "2hr", schedule: { morning: "奧克蘭轉機", noon: "13:00 抵達並取車", evening: "雅芳河撐船、紙教堂、河岸夕陽" }, waypoints: [[-43.489, 172.532], [-43.525, 172.630]], spots: [{name: "基督城機場", type: "起", pos: [-43.489, 172.532]}, {name: "雅芳河", type: "📷", pos: [-43.530, 172.635]}, {name: "B&B 住宿", type: "住", pos: [-43.525, 172.630]}] },
+        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater Resort", drive: "基督城 → Tekapo", driveTime: "3hr", totalTime: "5hr", schedule: { morning: "09:00 出發經 Fairlie 買派", noon: "湖邊午餐、善牧教堂散步", evening: "入住飯店、19:30 觀星行程" }, waypoints: [[-43.525, 172.630], [-44.095, 170.829], [-44.004, 170.477]], spots: [{name: "出發點", type: "起", pos: [-43.525, 172.630]}, {name: "善牧教堂", type: "📷", pos: [-44.003, 170.482]}, {name: "Tekapo 住宿", type: "住", pos: [-44.004, 170.477]}] },
+        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Mt Cook", driveTime: "1.2hr", totalTime: "4hr", schedule: { morning: "09:30 經 Pukaki 湖拍照", noon: "11:15–15:00 Hooker Valley Track 健行", evening: "隱士飯店享受景觀" }, waypoints: [[-44.004, 170.477], [-44.185, 170.151], [-43.734, 170.096]], spots: [{name: "Tekapo", type: "起", pos: [-44.004, 170.477]}, {name: "Peter's Lookout", type: "📷", pos: [-44.185, 170.151]}, {name: "隱士飯店", type: "住", pos: [-43.734, 170.096]}] },
+        { day: 5, title: "圓石與企鵝", stay: "Oamaru 市區", drive: "Mt Cook → Oamaru", driveTime: "2.7hr", totalTime: "5hr", schedule: { morning: "移動至東岸", noon: "12:30 莫拉基大圓石拍照", evening: "16:00 Bushy Beach、19:00 藍企鵝歸巢" }, waypoints: [[-43.734, 170.096], [-45.345, 170.826], [-45.097, 170.970]], spots: [{name: "庫克山", type: "起", pos: [-43.734, 170.096]}, {name: "大圓石", type: "📷", pos: [-45.345, 170.826]}, {name: "Oamaru 住宿", type: "住", pos: [-45.097, 170.970]}] },
+        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2hr", totalTime: "5.5hr", schedule: { morning: "Lindis Pass 攝影、Omarama 吃鮭魚", noon: "中途 Cromwell 補給", evening: "14:30 抵達、That Wanaka Tree 夕陽" }, waypoints: [[-45.097, 170.970], [-44.485, 169.987], [-44.694, 169.132]], spots: [{name: "Oamaru", type: "起", pos: [-45.097, 170.970]}, {name: "高山鮭魚", type: "📷", pos: [-44.485, 169.987]}, {name: "Edgewater", type: "住", pos: [-44.694, 169.132]}] },
+        { day: 7, title: "Wanaka 滑雪日", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1hr", totalTime: "8hr", schedule: { morning: "滑雪者：接駁上山 (Cardrona)", noon: "不滑雪者：薰衣草農場 / 湖邊咖啡", evening: "Wanaka 小鎮晚餐" }, waypoints: [[-44.694, 169.132], [-44.863, 169.004]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "Cardrona", type: "📷", pos: [-44.863, 169.004]}] },
+        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 周邊", driveTime: "N/A", totalTime: "N/A", schedule: { morning: "輕鬆版：湖畔散步", noon: "拍照版：Roys Peak 下方觀景點", evening: "小鎮特色料理" }, waypoints: [[-44.694, 169.132]], spots: [{name: "瓦納卡樹", type: "📷", pos: [-44.670, 169.110]}] },
+        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → 皇后鎮", driveTime: "1.5hr", totalTime: "3hr", schedule: { morning: "走 Crown Range、箭鎮散步", noon: "下午皇后鎮入住", evening: "Fergburger 漢堡、湖邊散步" }, waypoints: [[-44.694, 169.132], [-44.942, 168.835], [-45.031, 168.662]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "箭鎮", type: "📷", pos: [-44.942, 168.835]}, {name: "Wyndham", type: "住", pos: [-45.031, 168.662]}] },
+        { day: 10, title: "皇后鎮滑雪日", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1hr", totalTime: "8hr", schedule: { morning: "滑雪者：卓越山", noon: "不滑雪者：Skyline Gondola + Luge", evening: "市區大餐慶祝" }, waypoints: [[-45.031, 168.662], [-45.059, 168.814]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "卓越山", type: "📷", pos: [-45.059, 168.814]}] },
+        { day: 11, title: "格萊諾基冒險", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5hr", totalTime: "3hr", schedule: { morning: "09:30 出發自駕", noon: "Glenorchy Wharf 拍照", evening: "回到皇后鎮休息" }, waypoints: [[-45.031, 168.662], [-44.850, 168.385]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "紅色小屋", type: "📷", pos: [-44.850, 168.385]}] },
+        { day: 12, title: "蒂阿瑙螢火蟲", stay: "Te Anau 飯店", drive: "皇后鎮 → Te Anau", driveTime: "2hr", totalTime: "2hr", schedule: { morning: "10:00 出發", noon: "下午 Te Anau 湖邊散步", evening: "19:00 螢火蟲洞導覽探險" }, waypoints: [[-45.031, 168.662], [-45.414, 167.717]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "Te Anau", type: "住", pos: [-45.414, 167.717]}] },
+        { day: 13, title: "米佛峽灣震撼", stay: "Te Anau 飯店", drive: "Te Anau ↔ Milford", driveTime: "4.5hr", totalTime: "12hr", schedule: { morning: "07:00 巴士出發經鏡湖", noon: "米佛峽灣遊船午餐", evening: "回到 Te Anau 吃圓鱈派" }, waypoints: [[-45.414, 167.717], [-44.939, 168.012], [-44.671, 167.926]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "鏡湖", type: "📷", pos: [-44.939, 168.012]}, {name: "米佛遊船", type: "📷", pos: [-44.671, 167.926]}] },
+        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → 皇后鎮", driveTime: "2hr", totalTime: "2hr", schedule: { morning: "09:30 出發、12:00 抵達", noon: "下午最後採買伴手禮", evening: "整理行李、早睡準備" }, waypoints: [[-45.414, 167.717], [-45.035, 168.655]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "皇后鎮", type: "住", pos: [-45.035, 168.655]}] },
+        { day: 15, title: "回程台北", stay: "溫暖的家", drive: "ZQN ✈ TPE", driveTime: "12hr+", totalTime: "12hr+", schedule: { morning: "07:00 ZQN 皇后鎮機場起飛", noon: "奧克蘭轉機", evening: "抵達台北" }, waypoints: [[-45.035, 168.655], [-45.018, 168.745]], spots: [{name: "皇后鎮市區", type: "起", pos: [-45.035, 168.655]}, {name: "ZQN 機場", type: "✈️", pos: [-45.018, 168.745]}] }
     ];
 
     const map = L.map('map').setView([-44.5, 170.5], 7);
@@ -94,7 +93,7 @@
         document.getElementById('btn-all').classList.add('active');
         if (routeControl) map.removeControl(routeControl);
         markersLayer.clearLayers();
-        document.getElementById('day-details').innerHTML = `<div class="card"><h2>🌍 南島 15 天環狀之旅</h2><p>✈️機場 / 起:出發 / 🏠:住宿 / 📷:景點</p><p>這是一趟專屬於您的 2026 紐西蘭自駕旅程，點擊左側天數查看每日細節與路徑。</p></div>`;
+        document.getElementById('day-details').innerHTML = `<div class="card"><h2>🌍 2026 紐西蘭 15 天總覽</h2><p>✈️機場 / 起:出發 / 🏠:住宿 / 📷:景點</p><p>點擊左側天數 D1-D15 查看每日細節。</p></div>`;
         itinerary.forEach(day => day.spots.forEach(spot => createCustomMarker(spot)));
         map.flyTo([-44.5, 170.5], 7);
     }
@@ -108,14 +107,12 @@
     function showDay(item, btn) {
         document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const imgHtml = item.img ? `<img src="${item.img}" class="spot-img" alt="${item.title}">` : '';
         document.getElementById('day-details').innerHTML = `
             <div class="card">
-                ${imgHtml}
                 <h2 style="margin:0 0 10px 0; color:var(--accent); font-size:1.3rem;">Day ${item.day}: ${item.title}</h2>
                 <span class="label">🏠 今晚住哪</span><span class="value">${item.stay}</span>
                 <span class="label">🚗 移動路線</span><span class="value">${item.drive}</span>
-                <span class="label">⏱️ 建議耗時</span><span class="value">${item.driveTime} / ${item.totalTime}</span>
+                <span class="label">⏱️ 耗時 (純行車/預估)</span><span class="value">${item.driveTime} / ${item.totalTime}</span>
                 <div class="sch-box">
                     <div class="sch-item"><span class="sch-tag">早上</span>${item.schedule.morning}</div>
                     <div class="sch-item"><span class="sch-tag">中午</span>${item.schedule.noon}</div>
