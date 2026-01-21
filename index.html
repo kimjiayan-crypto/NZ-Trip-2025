@@ -3,71 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>紐西蘭 15 天家族自駕導覽</title>
+    <title>紐西蘭 15 天完整行程導覽</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root { --primary: #2c3e50; --accent: #e67e22; --bg: #fdfdfd; }
         body { margin: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
+        header { background: var(--primary); color: white; padding: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
         #container { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 380px; overflow-y: auto; padding: 15px; border-right: 1px solid #ddd; background: #fff; }
-        #map { flex: 1; }
+        #sidebar { width: 380px; overflow-y: auto; padding: 15px; border-right: 1px solid #ddd; background: #fff; z-index: 999; }
+        #map { flex: 1; height: 100%; background: #eee; } /* 確保背景色以便觀察加載 */
         
-        /* 每日行程卡片樣式 */
         .day-box { background: white; border-radius: 12px; padding: 16px; margin-bottom: 15px; border: 1px solid #eee; transition: all 0.3s ease; cursor: pointer; }
         .day-box:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 6px solid var(--accent); }
         .active-day { border-left: 6px solid var(--accent); background: #fff9f5; }
         .day-num-title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; display: flex; align-items: center; }
-        .day-num-badge { background: var(--accent); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8rem; }
-        .route-info { color: #7f8c8d; font-size: 0.85rem; margin: 8px 0; display: flex; align-items: center; }
-        .details { font-size: 0.9rem; color: #555; line-height: 1.6; }
+        .day-num-badge { background: var(--accent); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8rem; flex-shrink: 0; }
+        .route-info { color: #7f8c8d; font-size: 0.85rem; margin: 8px 0; }
+        .details { font-size: 0.9rem; color: #555; line-height: 1.6; white-space: pre-line; }
         
-        /* 自定義數字圖標樣式 */
+        /* 自定義數字圖標 */
         .custom-div-icon { background: none; border: none; }
         .marker-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: #e67e22; position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -15px 0 0 -15px; border: 2px solid #fff; }
         .marker-pin::after { content: ''; width: 24px; height: 24px; margin: 3px 0 0 3px; background: #fff; position: absolute; border-radius: 50%; }
         .marker-text { position: absolute; width: 30px; height: 30px; top: 0; left: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #e67e22; font-size: 12px; z-index: 10; }
 
-        @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 40%; } #map { height: 60%; } }
+        @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 45%; } #map { height: 55%; } }
     </style>
 </head>
 <body>
 
-<header>🇳🇿 紐西蘭自駕行程：Day 數字標註版</header>
+<header>🇳🇿 紐西蘭 15 天全紀錄 (含車程時間)</header>
 
 <div id="container">
-    <div id="sidebar"></div>
+    <div id="sidebar" id="itinerary-list"></div>
     <div id="map"></div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    // 1. 行程資料與座標
     const itinerary = [
-        { day: 2, title: "基督城取車", route: "CHC 機場 → 市區", dist: "12km", details: "雅芳河撐船、紙教堂、Riverside Market", pos: [-43.532, 172.636] },
-        { day: 3, title: "Tekapo 星空湖泊", route: "基督城 → Tekapo", dist: "225km", details: "Fairlie 買派、善牧教堂、湖邊觀星", pos: [-44.004, 170.477] },
-        { day: 4, title: "庫克山健行", route: "Tekapo → Mt Cook", dist: "105km", details: "Hooker Valley 步道、普卡基湖、隱士飯店", pos: [-43.734, 170.096] },
-        { day: 5, title: "奧瑪魯企鵝", route: "Mt Cook → Oamaru", dist: "215km", details: "Moeraki 大圓石、藍企鵝歸巢", pos: [-45.097, 170.970] },
-        { day: 6, title: "Wanaka 湖畔", route: "Oamaru → Wanaka", dist: "280km", details: "Lindis Pass、High Country Salmon、那棵樹", pos: [-44.694, 169.132] },
-        { day: 9, title: "抵達皇后鎮", route: "Wanaka → 皇后鎮", dist: "70km", details: "皇冠公路、箭鎮、Skyline 夜景", pos: [-45.031, 168.662] },
-        { day: 11, title: "魔戒格萊諾基", route: "皇后鎮 → Glenorchy", dist: "45km", details: "湖畔公路、Glenorchy 碼頭大景", pos: [-44.850, 168.385] },
-        { day: 12, title: "蒂阿瑙螢火蟲", route: "皇后鎮 → Te Anau", dist: "175km", details: "Te Anau 湖、螢火蟲洞導覽", pos: [-45.414, 167.717] },
-        { day: 13, title: "米佛峽灣", route: "Te Anau → Milford", dist: "120km", details: "峽灣遊船、鏡湖、米佛景觀公路", pos: [-44.671, 167.926] }
+        { day: 1, title: "台北啟程", route: "TPE -> AKL", time: "飛航中", details: "18:30 TPE 起飛（經奧克蘭轉機）", pos: [-37.008, 174.791] },
+        { day: 2, title: "抵達基督城", route: "CHC 機場 -> 市區", time: "20 min", details: "13:00 抵達取車\n16:30 雅芳河撐船/植物園散步\n17:30 紙教堂/Riverside Market", pos: [-43.532, 172.636] },
+        { day: 3, title: "基督城 → Tekapo", route: "基督城 -> Tekapo", time: "3 hr", details: "中途停 Geraldine/Fairlie 買派\n14:00 善牧教堂\n19:30 星空觀星行程", pos: [-44.004, 170.477] },
+        { day: 4, title: "庫克山健行", route: "Tekapo -> Mt Cook", time: "1 hr 15 min", details: "11:15 Hooker Valley Track (3.5hr)\n入住隱士飯店 The Hermitage", pos: [-43.734, 170.096] },
+        { day: 5, title: "東岸看企鵝", route: "Mt Cook -> Oamaru", time: "2 hr 40 min", details: "12:30 Moeraki Boulders 大圓石\n16:00 Bushy Beach 黃眼企鵝\n19:00 藍企鵝歸巢", pos: [-45.097, 170.970] },
+        { day: 6, title: "前往 Wanaka", route: "Oamaru -> Wanaka", time: "3 hr 15 min", details: "中途停 Omarama 吃鮭魚生魚片\n經過絕美 Lindis Pass\n傍晚：That Wanaka Tree", pos: [-44.694, 169.132] },
+        { day: 7, title: "Wanaka 滑雪日", route: "Wanaka -> Cardrona", time: "45 min", details: "Cardrona 滑雪場\n不滑雪者：薰衣草農場/Puzzling World", pos: [-44.863, 169.004] },
+        { day: 8, title: "Wanaka 自由日", route: "小鎮放鬆", time: "N/A", details: "湖畔散步 / Roys Peak 觀景點拍攝", pos: [-44.694, 169.132] },
+        { day: 9, title: "前往皇后鎮", route: "Wanaka -> Queenstown", time: "1 hr 15 min", details: "走 Crown Range 皇冠公路\n中途：箭鎮 Arrowtown 漫步", pos: [-45.031, 168.662] },
+        { day: 10, title: "皇后鎮滑雪日", route: "市區 -> 卓越山", time: "40 min", details: "卓越山滑雪場\n不滑雪者：Skyline Gondola + Luge", pos: [-45.059, 168.814] },
+        { day: 11, title: "魔界大景一日", route: "皇后鎮 -> Glenorchy", time: "45 min", details: "Glenorchy Wharf 碼頭\n最美湖畔公路停靠拍照", pos: [-44.850, 168.385] },
+        { day: 12, title: "蒂阿瑙螢火蟲", route: "皇后鎮 -> Te Anau", time: "2 hr", details: "下午：Te Anau 湖邊散步\n19:00 螢火蟲洞導覽", pos: [-45.414, 167.717] },
+        { day: 13, title: "米佛峽灣", route: "Te Anau -> Milford", time: "2 hr 15 min", details: "Milford Sound 一日遊船團\n(07:00-19:00 巴士+遊船)", pos: [-44.671, 167.926] },
+        { day: 14, title: "重返皇后鎮", route: "Te Anau -> Queenstown", time: "2 hr", details: "最後採買、散步、早睡準備回程", pos: [-45.031, 168.662] },
+        { day: 15, title: "回台", route: "ZQN -> TPE", time: "飛航中", details: "07:00 ZQN 起飛 -> AKL 轉機 -> 台北", pos: [-45.018, 168.745] }
     ];
 
-    // 2. 初始化地圖
-    const map = L.map('map').setView([-44.5, 170.5], 7);
-    L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
+    // 初始化地圖 - 增加穩定性
+    const map = L.map('map', {
+        center: [-44.2, 170.5],
+        zoom: 7,
+        layers: [L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png')]
+    });
 
-    // 3. 繪製連線 (行程路徑)
-    const pathCoords = itinerary.map(item => item.pos);
-    L.polyline(pathCoords, { color: '#e67e22', weight: 3, opacity: 0.6, dashArray: '8, 8' }).addTo(map);
+    // 延遲重繪確保地圖顯示正確
+    setTimeout(() => { map.invalidateSize(); }, 500);
 
     const sidebar = document.getElementById('sidebar');
 
-    // 4. 生成內容與自定義標記
     itinerary.forEach((item) => {
-        // 自定義「帶數字」的圖標
+        // 自定義標記
         const customIcon = L.divIcon({
             className: 'custom-div-icon',
             html: `<div class='marker-pin'></div><div class='marker-text'>${item.day}</div>`,
@@ -76,7 +81,7 @@
         });
 
         const marker = L.marker(item.pos, { icon: customIcon }).addTo(map)
-            .bindPopup(`<b>Day ${item.day}: ${item.title}</b><br>${item.route}`);
+            .bindPopup(`<b>Day ${item.day}: ${item.title}</b><br>🚗 車程：${item.time}<br>📍 ${item.route}`);
 
         // 建立左側列表
         const card = document.createElement('div');
@@ -86,7 +91,7 @@
                 <div class="day-num-badge">${item.day}</div>
                 ${item.title}
             </div>
-            <div class="route-info">📍 ${item.route} (約 ${item.dist})</div>
+            <div class="route-info">🚗 車程時間：<b>${item.time}</b><br>📍 ${item.route}</div>
             <div class="details">${item.details}</div>
         `;
 
@@ -99,6 +104,10 @@
 
         sidebar.appendChild(card);
     });
+
+    // 繪製路徑連線
+    const pathCoords = itinerary.map(i => i.pos);
+    L.polyline(pathCoords, { color: '#e67e22', weight: 2, opacity: 0.5, dashArray: '5, 10' }).addTo(map);
 </script>
 </body>
 </html>
