@@ -3,111 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>紐西蘭 15 天完整行程導覽</title>
+    <title>紐西蘭自駕戰情室 - 15天全攻略</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --primary: #2c3e50; --accent: #e67e22; --bg: #fdfdfd; }
-        body { margin: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
-        header { background: var(--primary); color: white; padding: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
+        :root { --primary: #1a2a3a; --accent: #e67e22; --danger: #c0392b; --safe: #27ae60; --info: #3498db; }
+        body { margin: 0; font-family: "PingFang TC", "Microsoft JhengHei", sans-serif; display: flex; flex-direction: column; height: 100vh; background: #f0f2f5; }
+        header { background: var(--primary); color: white; padding: 12px; text-align: center; z-index: 1001; }
+        
         #container { display: flex; flex: 1; overflow: hidden; }
-        #sidebar { width: 380px; overflow-y: auto; padding: 15px; border-right: 1px solid #ddd; background: #fff; z-index: 999; }
-        #map { flex: 1; height: 100%; background: #eee; } /* 確保背景色以便觀察加載 */
         
-        .day-box { background: white; border-radius: 12px; padding: 16px; margin-bottom: 15px; border: 1px solid #eee; transition: all 0.3s ease; cursor: pointer; }
-        .day-box:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-left: 6px solid var(--accent); }
-        .active-day { border-left: 6px solid var(--accent); background: #fff9f5; }
-        .day-num-title { font-size: 1.1rem; font-weight: bold; color: #2c3e50; display: flex; align-items: center; }
-        .day-num-badge { background: var(--accent); color: white; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 0.8rem; flex-shrink: 0; }
-        .route-info { color: #7f8c8d; font-size: 0.85rem; margin: 8px 0; }
-        .details { font-size: 0.9rem; color: #555; line-height: 1.6; white-space: pre-line; }
-        
-        /* 自定義數字圖標 */
-        .custom-div-icon { background: none; border: none; }
-        .marker-pin { width: 30px; height: 30px; border-radius: 50% 50% 50% 0; background: #e67e22; position: absolute; transform: rotate(-45deg); left: 50%; top: 50%; margin: -15px 0 0 -15px; border: 2px solid #fff; }
-        .marker-pin::after { content: ''; width: 24px; height: 24px; margin: 3px 0 0 3px; background: #fff; position: absolute; border-radius: 50%; }
-        .marker-text { position: absolute; width: 30px; height: 30px; top: 0; left: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #e67e22; font-size: 12px; z-index: 10; }
+        /* 側邊欄升級 */
+        #sidebar { width: 450px; overflow-y: auto; background: #fff; border-right: 1px solid #ddd; z-index: 1000; scroll-behavior: smooth; }
+        .summary-card { background: var(--primary); color: white; padding: 20px; margin: 10px; border-radius: 12px; font-size: 0.9rem; }
+        .filter-bar { padding: 10px; background: #fff; border-bottom: 1px solid #eee; position: sticky; top: 0; z-index: 10; display: flex; gap: 5px; }
+        .filter-btn { padding: 5px 10px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; font-size: 0.8rem; background: white; }
+        .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
 
-        @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 45%; } #map { height: 55%; } }
+        /* 每日卡片結構化 */
+        .day-box { padding: 20px; border-bottom: 8px solid #f0f2f5; transition: 0.3s; }
+        .active-day { background: #fff9f5; border-left: 8px solid var(--accent); }
+        .section-title { font-weight: bold; font-size: 0.85rem; color: #7f8c8d; margin-top: 12px; margin-bottom: 4px; border-left: 3px solid #ddd; padding-left: 8px; }
+        .highlight-text { color: var(--accent); font-weight: bold; font-size: 1.1rem; }
+        
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .time-item { background: #f8f9fa; padding: 8px; border-radius: 6px; font-size: 0.8rem; }
+        
+        .todo-item { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; margin-top: 4px; }
+        .todo-item input { cursor: pointer; }
+
+        .footer-banner { background: #fff3cd; color: #856404; padding: 10px; font-size: 0.85rem; text-align: center; border-top: 1px solid #ffeeba; }
+
+        #map { flex: 1; }
+        @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 45%; } }
     </style>
 </head>
 <body>
 
-<header>🇳🇿 紐西蘭 15 天全紀錄 (含車程時間)</header>
+<header>🇳🇿 紐西蘭自駕戰情室 (15天行程手冊)</header>
 
 <div id="container">
-    <div id="sidebar" id="itinerary-list"></div>
+    <div id="sidebar">
+        <div class="summary-card">
+            <h3 style="margin-top:0;">📍 旅程總覽 (CHC 環狀)</h3>
+            <p>路線：CHC → 湖區 → 庫克山 → 東岸 → 瓦納卡 → 皇后鎮 → 峽灣 → 回程</p>
+            <div style="display:flex; gap:10px;">
+                <span>強度：⭐⭐ (中等)</span>
+                <span>🔥 關鍵日：D3, D4, D13</span>
+            </div>
+            <p style="font-size:0.8rem; opacity:0.8; margin-top:10px;">※ 建議：D3/D13 需早起，D8/D14 可睡晚。</p>
+        </div>
+
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="filterType('all')">全部</button>
+            <button class="filter-btn" onclick="filterType('warn')">⚠️ 警示</button>
+            <button class="filter-btn" onclick="filterType('food')">🍴 美食</button>
+            <button class="filter-btn" onclick="filterType('gear')">🧥 裝備</button>
+        </div>
+
+        <div id="itinerary-list"></div>
+    </div>
     <div id="map"></div>
+</div>
+
+<div class="footer-banner">
+    🚨 安全提醒：天黑不開山路 | 每 2 小時休息 | 油量半桶就補 | 砂蠅預防 (風衣+長褲)
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+    // 專家微調後的完整資料結構
     const itinerary = [
-        { day: 1, title: "台北啟程", route: "TPE -> AKL", time: "飛航中", details: "18:30 TPE 起飛（經奧克蘭轉機）", pos: [-37.008, 174.791] },
-        { day: 2, title: "抵達基督城", route: "CHC 機場 -> 市區", time: "20 min", details: "13:00 抵達取車\n16:30 雅芳河撐船/植物園散步\n17:30 紙教堂/Riverside Market", pos: [-43.532, 172.636] },
-        { day: 3, title: "基督城 → Tekapo", route: "基督城 -> Tekapo", time: "3 hr", details: "中途停 Geraldine/Fairlie 買派\n14:00 善牧教堂\n19:30 星空觀星行程", pos: [-44.004, 170.477] },
-        { day: 4, title: "庫克山健行", route: "Tekapo -> Mt Cook", time: "1 hr 15 min", details: "11:15 Hooker Valley Track (3.5hr)\n入住隱士飯店 The Hermitage", pos: [-43.734, 170.096] },
-        { day: 5, title: "東岸看企鵝", route: "Mt Cook -> Oamaru", time: "2 hr 40 min", details: "12:30 Moeraki Boulders 大圓石\n16:00 Bushy Beach 黃眼企鵝\n19:00 藍企鵝歸巢", pos: [-45.097, 170.970] },
-        { day: 6, title: "前往 Wanaka", route: "Oamaru -> Wanaka", time: "3 hr 15 min", details: "中途停 Omarama 吃鮭魚生魚片\n經過絕美 Lindis Pass\n傍晚：That Wanaka Tree", pos: [-44.694, 169.132] },
-        { day: 7, title: "Wanaka 滑雪日", route: "Wanaka -> Cardrona", time: "45 min", details: "Cardrona 滑雪場\n不滑雪者：薰衣草農場/Puzzling World", pos: [-44.863, 169.004] },
-        { day: 8, title: "Wanaka 自由日", route: "小鎮放鬆", time: "N/A", details: "湖畔散步 / Roys Peak 觀景點拍攝", pos: [-44.694, 169.132] },
-        { day: 9, title: "前往皇后鎮", route: "Wanaka -> Queenstown", time: "1 hr 15 min", details: "走 Crown Range 皇冠公路\n中途：箭鎮 Arrowtown 漫步", pos: [-45.031, 168.662] },
-        { day: 10, title: "皇后鎮滑雪日", route: "市區 -> 卓越山", time: "40 min", details: "卓越山滑雪場\n不滑雪者：Skyline Gondola + Luge", pos: [-45.059, 168.814] },
-        { day: 11, title: "魔界大景一日", route: "皇后鎮 -> Glenorchy", time: "45 min", details: "Glenorchy Wharf 碼頭\n最美湖畔公路停靠拍照", pos: [-44.850, 168.385] },
-        { day: 12, title: "蒂阿瑙螢火蟲", route: "皇后鎮 -> Te Anau", time: "2 hr", details: "下午：Te Anau 湖邊散步\n19:00 螢火蟲洞導覽", pos: [-45.414, 167.717] },
-        { day: 13, title: "米佛峽灣", route: "Te Anau -> Milford", time: "2 hr 15 min", details: "Milford Sound 一日遊船團\n(07:00-19:00 巴士+遊船)", pos: [-44.671, 167.926] },
-        { day: 14, title: "重返皇后鎮", route: "Te Anau -> Queenstown", time: "2 hr", details: "最後採買、散步、早睡準備回程", pos: [-45.031, 168.662] },
-        { day: 15, title: "回台", route: "ZQN -> TPE", time: "飛航中", details: "07:00 ZQN 起飛 -> AKL 轉機 -> 台北", pos: [-45.018, 168.745] }
+        { 
+            day: 1, title: "啟程紐西蘭", highlight: "跨越時差的第一步", 
+            startTime: "18:30 TPE 出發", driveTime: "飛航", totalTime: "12hr+", 
+            stay: "機上 / 奧克蘭轉機", booking: "機票 (必)", planB: "機場休息區待命",
+            todo: ["確認電子簽證 NZeTA", "離線地圖下載", "護照檢查"],
+            details: "18:30 TPE 起飛，準備迎接純淨國度。", pos: [-37.008, 174.791], type: "gear" 
+        },
+        { 
+            day: 2, title: "基督城取車", highlight: "熟悉左駕與超市補給", 
+            startTime: "13:30 取車完畢", driveTime: "20m", totalTime: "1hr", 
+            stay: "基督城市區 (The Grange)", booking: "租車/飯店 (必)", food: "Riverside Market",
+            todo: ["Pak'nSave 大採買(水/零食)", "辦理當地 SIM 卡", "熟悉左駕打檔"],
+            details: "取車後先去超市，傍晚雅芳河散步消解疲勞。", pos: [-43.532, 172.636], type: "food" 
+        },
+        { 
+            day: 3, title: "前往 Tekapo", highlight: "世界星空保護區與鮭魚派", 
+            startTime: "09:00 最晚出發", driveTime: "3hr", totalTime: "5hr (含停靠)", 
+            stay: "Tekapo (Peppers)", booking: "觀星團 (建)", food: "Fairlie Bakehouse 鮭魚派",
+            todo: ["Geraldine 停留休息", "拍善牧教堂", "半夜觀星預備"],
+            details: "路經 Fairlie 必買鮭魚派。Tekapo 觀星要看氣象。", pos: [-44.004, 170.477], type: "food" 
+        },
+        { 
+            day: 4, title: "庫克山健行", highlight: "Hooker Valley 冰河冰山", 
+            startTime: "09:30 出發", driveTime: "1.2hr", totalTime: "3hr (含拍照)", 
+            stay: "庫克山 (The Hermitage)", booking: "飯店 (必)", gear: "登山鞋/防風衣",
+            todo: ["Peter's Lookout 拍湖", "帶瓶裝水健行", "充飽相機電池"],
+            details: "Hooker Valley 步道來回約 3.5hr，建議越早開始越好。", pos: [-43.734, 170.096], type: "gear" 
+        },
+        { 
+            day: 5, title: "東岸看企鵝", highlight: "大圓石與藍企鵝歸巢", 
+            startTime: "09:30 最晚出發", driveTime: "2.7hr", totalTime: "5hr", 
+            stay: "Oamaru", booking: "企鵝票 (建)", warn: "企鵝區禁閃光燈",
+            planB: "若下大雨，企鵝歸巢可能取消，改市區室內餐館",
+            todo: ["查潮汐看大圓石", "提早45分到企鵝場", "穿極暖衣物(海邊冷)"],
+            details: "大圓石需在退潮時最美。晚上企鵝歸巢非常冷，務必穿羽絨。", pos: [-45.097, 170.970], type: "warn" 
+        },
+        { 
+            day: 6, title: "穿越 Lindis Pass", highlight: "內陸高山絕景與鮭魚", 
+            startTime: "09:00 出發", driveTime: "3.2hr", totalTime: "5.5hr", 
+            stay: "Wanaka (Edgewater)", food: "High Country Salmon", warn: "山路多彎注意暈車",
+            todo: ["Omarama 休息吃鮭魚", "Lindis Pass 觀景台停靠", "拍 Wanaka Tree 夕陽"],
+            details: "Lindis Pass 是經典公路，路彎請後座吃暈車藥。", pos: [-44.694, 169.132], type: "warn" 
+        },
+        { 
+            day: 13, title: "米佛峽灣 (最硬日)", highlight: "世界第八大奇蹟遊船", 
+            startTime: "06:30 必須離開飯店", driveTime: "4.5hr (來回)", totalTime: "12hr", 
+            stay: "Te Anau", booking: "船票 (必預訂)", warn: "無訊號 / 砂蠅極多", gear: "雨衣 / 離線地圖",
+            planB: "下雨照去更美(瀑布多)；若封路改 Te Anau 散步",
+            todo: ["帶好午餐餐盒", "檢查油量(峽灣無油站)", "穿防水外套"],
+            details: "紐西蘭自駕最危險也最美的公路。務必遵守時間。", pos: [-44.671, 167.926], type: "warn" 
+        }
     ];
 
-    // 初始化地圖 - 增加穩定性
-    const map = L.map('map', {
-        center: [-44.2, 170.5],
-        zoom: 7,
-        layers: [L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png')]
-    });
+    // 初始化地圖與雙向連動
+    const map = L.map('map').setView([-44.2, 170.5], 7);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-    // 延遲重繪確保地圖顯示正確
-    setTimeout(() => { map.invalidateSize(); }, 500);
-
-    const sidebar = document.getElementById('sidebar');
+    const sidebar = document.getElementById('itinerary-list');
+    const markers = {};
 
     itinerary.forEach((item) => {
-        // 自定義標記
         const customIcon = L.divIcon({
             className: 'custom-div-icon',
             html: `<div class='marker-pin'></div><div class='marker-text'>${item.day}</div>`,
-            iconSize: [30, 42],
-            iconAnchor: [15, 42]
+            iconSize: [32, 42], iconAnchor: [16, 42]
         });
 
         const marker = L.marker(item.pos, { icon: customIcon }).addTo(map)
-            .bindPopup(`<b>Day ${item.day}: ${item.title}</b><br>🚗 車程：${item.time}<br>📍 ${item.route}`);
+            .bindPopup(`<b>D${item.day}: ${item.title}</b><br>⏱️總時長: ${item.totalTime}`);
+        
+        markers[item.day] = marker;
 
-        // 建立左側列表
+        // 7B) 點 marker 同步高亮側欄
+        marker.on('click', () => {
+            scrollToDay(item.day);
+        });
+
         const card = document.createElement('div');
-        card.className = 'day-box';
+        card.className = `day-box filter-${item.type}`;
+        card.id = `day-card-${item.day}`;
         card.innerHTML = `
-            <div class="day-num-title">
-                <div class="day-num-badge">${item.day}</div>
-                ${item.title}
+            <div class="highlight-text">Day ${item.day}: ${item.highlight}</div>
+            <div style="font-weight:bold; color:#34495e;">📍 ${item.title}</div>
+            
+            <div class="time-grid">
+                <div class="time-item">🕙 出發：${item.startTime}</div>
+                <div class="time-item">🏠 住宿：${item.stay}</div>
+                <div class="time-item">🚗 純行車：${item.driveTime}</div>
+                <div class="time-item">⏳ 含停靠：${item.totalTime}</div>
             </div>
-            <div class="route-info">🚗 車程時間：<b>${item.time}</b><br>📍 ${item.route}</div>
-            <div class="details">${item.details}</div>
+
+            <div class="section-title">今日必做 (Todo)</div>
+            ${item.todo.map(t => `<div class="todo-item"><input type="checkbox"> ${t}</div>`).join('')}
+
+            <div class="section-title">專家建議與備案</div>
+            <div style="font-size:0.85rem; line-height:1.5;">
+                ${item.warn ? `<span style="color:var(--danger)">⚠️警告: ${item.warn}</span><br>` : ''}
+                ${item.planB ? `<span style="color:var(--info)">🔄備案: ${item.planB}</span><br>` : ''}
+                📖 詳情: ${item.details}
+            </div>
         `;
 
         card.onclick = () => {
-            map.flyTo(item.pos, 11);
+            map.flyTo(item.pos, 10);
             marker.openPopup();
-            document.querySelectorAll('.day-box').forEach(b => b.classList.remove('active-day'));
-            card.classList.add('active-day');
+            setActiveCard(item.day);
         };
-
         sidebar.appendChild(card);
     });
 
-    // 繪製路徑連線
-    const pathCoords = itinerary.map(i => i.pos);
-    L.polyline(pathCoords, { color: '#e67e22', weight: 2, opacity: 0.5, dashArray: '5, 10' }).addTo(map);
+    function scrollToDay(day) {
+        const card = document.getElementById(`day-card-${day}`);
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setActiveCard(day);
+    }
+
+    function setActiveCard(day) {
+        document.querySelectorAll('.day-box').forEach(b => b.classList.remove('active-day'));
+        document.getElementById(`day-card-${day}`).classList.add('active-day');
+    }
+
+    function filterType(type) {
+        document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+        
+        document.querySelectorAll('.day-box').forEach(card => {
+            if(type === 'all' || card.classList.contains(`filter-${type}`)) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    L.polyline(itinerary.map(i => i.pos), { color: '#e67e22', weight: 2, opacity: 0.5, dashArray: '5, 10' }).addTo(map);
+    window.dispatchEvent(new Event('resize'));
 </script>
 </body>
 </html>
