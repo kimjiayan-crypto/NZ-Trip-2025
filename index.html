@@ -3,119 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2026 紐西蘭自駕導航手冊</title>
+    <title>2026 紐西蘭自駕戰情室</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        :root { --primary: #1a2a3a; --accent: #e67e22; --bg: #f4f7f6; --airport: #3498db; --hotel: #27ae60; --spot: #f39c12; }
+        :root { --primary: #1a2a3a; --accent: #e67e22; --bg: #f4f7f6; --airport: #3498db; --hotel: #27ae60; --spot: #f39c12; --start: #9b59b6; }
         body { margin: 0; font-family: "PingFang TC", sans-serif; display: flex; flex-direction: column; height: 100vh; background: var(--bg); }
         header { background: var(--primary); color: white; padding: 12px; text-align: center; font-weight: bold; }
         #container { display: flex; flex: 1; overflow: hidden; }
         #sidebar { width: 440px; display: flex; flex-direction: column; border-right: 1px solid #ddd; background: white; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
-        
-        /* 選單與按鈕 */
         #day-selector { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 10px; background: #eee; }
-        .day-btn { padding: 8px; border: none; background: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75rem; transition: 0.2s; }
+        .day-btn { padding: 8px; border: none; background: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
         .day-btn.active { background: var(--accent); color: white; }
         .all-btn { grid-column: span 4; background: var(--primary); color: white; margin-bottom: 5px; }
-        
         #day-content { flex: 1; overflow-y: auto; padding: 20px; }
         #map { flex: 1; z-index: 1; }
-
-        /* 卡片設計 */
+        
+        /* 隱藏導航指令面板 */
+        .leaflet-routing-container { display: none !important; }
+        
         .card { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         .label { font-weight: bold; color: #7f8c8d; font-size: 0.8rem; margin-top: 10px; display: block; }
         .value { font-size: 1rem; color: #2c3e50; margin-bottom: 5px; display: block; }
         .sch-box { border-left: 4px solid var(--accent); padding-left: 12px; margin-top: 15px; }
         .sch-item { margin-bottom: 10px; font-size: 0.95rem; line-height: 1.5; }
         .sch-tag { color: var(--accent); font-weight: bold; margin-right: 8px; }
-
+        
         /* 圖標標籤 */
-        .icon-label { background: white; border: 2px solid; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .icon-label { background: white; border: 2px solid; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         
         @media (max-width: 768px) { #container { flex-direction: column-reverse; } #sidebar { width: 100%; height: 50%; } }
     </style>
 </head>
 <body>
 
-<header>🇳🇿 2026 紐西蘭南島 15 天自駕戰情室</header>
+<header>🇳🇿 2026 紐西蘭南島自駕手冊 (含起終點導航)</header>
 
 <div id="container">
     <div id="sidebar">
         <div id="day-selector">
             <button class="day-btn all-btn active" id="btn-all" onclick="showOverview()">🌍 全程總覽行程</button>
-            </div>
+        </div>
         <div id="day-content"></div>
     </div>
     <div id="map"></div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 
 <script>
-    // 15 天完整行程資料與分類圖標
+    // 15 天完整行程資料
     const itinerary = [
-        { day: 1, title: "台北啟程", stay: "機上 (奧克蘭轉機)", drive: "TPE ✈ AKL", driveTime: "11hr", totalTime: "11hr", 
-          schedule: { morning: "行李檢查、前往機場", noon: "機場報到", evening: "18:30 飛往奧克蘭" }, 
-          waypoints: [[-37.008, 174.791]], 
-          spots: [{name: "桃園機場", type: "✈️", pos: [25.079, 121.234]}, {name: "奧克蘭機場", type: "✈️", pos: [-37.008, 174.791]}] },
-        { day: 2, title: "抵達基督城", stay: "The Grange Boutique B&B", drive: "CHC機場 → 飯店", driveTime: "20m", totalTime: "1.5hr", 
-          schedule: { morning: "抵達奧克蘭轉機", noon: "13:00 基督城取車", evening: "雅芳河撐船、紙教堂、市區散步" },
-          waypoints: [[-43.489, 172.532], [-43.525, 172.630]], 
-          spots: [{name: "基督城機場", type: "✈️", pos: [-43.489, 172.532]}, {name: "The Grange B&B", type: "🏠", pos: [-43.525, 172.630]}, {name: "紙教堂", type: "📷", pos: [-43.532, 172.640]}] },
-        { day: 3, title: "前往 Tekapo", stay: "Peppers Bluewater Resort", drive: "基督城 → Tekapo", driveTime: "3hr", totalTime: "5hr", 
-          schedule: { morning: "09:00 出發經 Fairlie", noon: "Fairlie 買派、湖邊午餐", evening: "善牧教堂、夜間觀星" },
-          waypoints: [[-43.525, 172.630], [-44.095, 170.829], [-44.004, 170.477]], 
-          spots: [{name: "Fairlie Bakehouse", type: "📷", pos: [-44.095, 170.829]}, {name: "善牧教堂", type: "📷", pos: [-44.003, 170.482]}, {name: "Peppers Resort", type: "🏠", pos: [-44.004, 170.477]}] },
-        { day: 4, title: "庫克山健行", stay: "The Hermitage Hotel", drive: "Tekapo → Mt Cook", driveTime: "1.2hr", totalTime: "3.5hr", 
-          schedule: { morning: "Pukaki 湖拍照", noon: "Hooker Valley Track 健行", evening: "隱士飯店雪山夕陽" },
-          waypoints: [[-44.004, 170.477], [-44.185, 170.151], [-43.734, 170.096]], 
-          spots: [{name: "Peter's Lookout", type: "📷", pos: [-44.185, 170.151]}, {name: "Hooker Valley Track", type: "📷", pos: [-43.719, 170.103]}, {name: "The Hermitage", type: "🏠", pos: [-43.734, 170.096]}] },
-        { day: 5, title: "東岸圓石企鵝", stay: "Oamaru 飯店", drive: "Mt Cook → Oamaru", driveTime: "2.7hr", totalTime: "5hr", 
-          schedule: { morning: "前往莫拉基", noon: "大圓石退潮拍照", evening: "Bushy Beach 看企鵝歸巢" },
-          waypoints: [[-43.734, 170.096], [-45.345, 170.826], [-45.097, 170.970]], 
-          spots: [{name: "Moeraki Boulders", type: "📷", pos: [-45.345, 170.826]}, {name: "Oamaru 飯店", type: "🏠", pos: [-45.097, 170.970]}] },
-        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2hr", totalTime: "5.5hr", 
-          schedule: { morning: "Lindis Pass 隘口", noon: "Omarama 吃鮭魚、Cromwell 補給", evening: "Wanaka Tree 夕陽" },
-          waypoints: [[-45.097, 170.970], [-44.485, 169.987], [-44.694, 169.132]], 
-          spots: [{name: "High Country Salmon", type: "📷", pos: [-44.485, 169.987]}, {name: "Edgewater Hotel", type: "🏠", pos: [-44.694, 169.132]}] },
-        { day: 7, title: "Cardrona 滑雪", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1hr", totalTime: "1hr", 
-          schedule: { morning: "滑雪場報到", noon: "滑雪體驗", evening: "Wanaka 晚餐" },
-          waypoints: [[-44.694, 169.132], [-44.863, 169.004]], 
-          spots: [{name: "Cardrona 滑雪場", type: "📷", pos: [-44.863, 169.004]}] },
-        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka 周邊", driveTime: "N/A", totalTime: "N/A", 
-          schedule: { morning: "睡到自然醒", noon: "Roys Peak 觀景點拍照", evening: "湖畔悠閒散步" },
-          waypoints: [[-44.694, 169.132]], 
-          spots: [{name: "That Wanaka Tree", type: "📷", pos: [-44.670, 169.110]}] },
-        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → 皇后鎮", driveTime: "1.5hr", totalTime: "2.5hr", 
-          schedule: { morning: "經皇冠公路、箭鎮", noon: "皇后鎮入住", evening: "湖邊 Fergburger 漢堡" },
-          waypoints: [[-44.694, 169.132], [-44.942, 168.835], [-45.031, 168.662]], 
-          spots: [{name: "Arrowtown 箭鎮", type: "📷", pos: [-44.942, 168.835]}, {name: "Wyndham Garden", type: "🏠", pos: [-45.031, 168.662]}] },
-        { day: 10, title: "卓越山滑雪", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1hr", totalTime: "1hr", 
-          schedule: { morning: "卓越山滑雪場", noon: "滑雪或搭纜車", evening: "皇后鎮市區大餐" },
-          waypoints: [[-45.031, 168.662], [-45.059, 168.814]], 
-          spots: [{name: "Remarkables 滑雪場", type: "📷", pos: [-45.059, 168.814]}] },
-        { day: 11, title: "格萊諾基冒險", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5hr", totalTime: "2.5hr", 
-          schedule: { morning: "最美公路自駕", noon: "碼頭紅色小屋拍照", evening: "回皇后鎮休息" },
-          waypoints: [[-45.031, 168.662], [-44.850, 168.385]], 
-          spots: [{name: "Glenorchy Wharf", type: "📷", pos: [-44.850, 168.385]}] },
-        { day: 12, title: "蒂阿瑙螢火蟲", stay: "Te Anau 飯店", drive: "皇后鎮 → Te Anau", driveTime: "2hr", totalTime: "2hr", 
-          schedule: { morning: "10:00 出發", noon: "Te Anau 湖邊午餐", evening: "19:00 螢火蟲洞導覽" },
-          waypoints: [[-45.031, 168.662], [-45.414, 167.717]], 
-          spots: [{name: "Te Anau 飯店", type: "🏠", pos: [-45.414, 167.717]}] },
-        { day: 13, title: "米佛峽灣", stay: "Te Anau 飯店", drive: "Te Anau ↔ Milford", driveTime: "4.5hr", totalTime: "11hr", 
-          schedule: { morning: "峽灣公路", noon: "遊船午餐", evening: "回程圓鱈派" },
-          waypoints: [[-45.414, 167.717], [-44.939, 168.012], [-44.671, 167.926]], 
-          spots: [{name: "鏡湖 Mirror Lakes", type: "📷", pos: [-44.939, 168.012]}, {name: "Milford Cruise", type: "📷", pos: [-44.671, 167.926]}] },
-        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → 皇后鎮", driveTime: "2hr", totalTime: "2hr", 
-          schedule: { morning: "悠閒早餐", noon: "市區最後採買", evening: "整理行李休息" },
-          waypoints: [[-45.414, 167.717], [-45.035, 168.655]], 
-          spots: [{name: "皇后鎮市區", type: "📷", pos: [-45.035, 168.655]}] },
-        { day: 15, title: "回台", stay: "溫暖的家", drive: "ZQN ✈ TPE", driveTime: "12hr+", totalTime: "12hr+", 
-          schedule: { morning: "機場報到", noon: "奧克蘭轉機", evening: "抵達台北" },
-          waypoints: [[-45.018, 168.745]], 
-          spots: [{name: "皇后鎮機場", type: "✈️", pos: [-45.018, 168.745]}] }
+        { day: 1, title: "台北啟程", stay: "機上", drive: "TPE ✈ AKL", driveTime: "11hr", totalTime: "11hr", schedule: { morning: "行李檢查", noon: "機場報到", evening: "18:30 起飛" }, waypoints: [[25.079, 121.234], [-37.008, 174.791]], spots: [{name: "桃園機場", type: "起", pos: [25.079, 121.234]}, {name: "奧克蘭機場", type: "住", pos: [-37.008, 174.791]}] },
+        { day: 2, title: "抵達基督城", stay: "The Grange B&B", drive: "機場 → 市區", driveTime: "20m", totalTime: "2hr", schedule: { morning: "奧克蘭轉機", noon: "13:00 取車", evening: "雅芳河撐船、紙教堂" }, waypoints: [[-43.489, 172.532], [-43.525, 172.630]], spots: [{name: "基督城機場", type: "起", pos: [-43.489, 172.532]}, {name: "The Grange B&B", type: "住", pos: [-43.525, 172.630]}] },
+        { day: 3, title: "前往 Tekapo", stay: "Peppers Resort", drive: "基督城 → Tekapo", driveTime: "3hr", totalTime: "5hr", schedule: { morning: "09:00 出發", noon: "Fairlie 買派", evening: "善牧教堂拍照" }, waypoints: [[-43.525, 172.630], [-44.095, 170.829], [-44.004, 170.477]], spots: [{name: "基督城市區", type: "起", pos: [-43.525, 172.630]}, {name: "Fairlie 買派", type: "📷", pos: [-44.095, 170.829]}, {name: "Peppers Resort", type: "住", pos: [-44.004, 170.477]}] },
+        { day: 4, title: "庫克山健行", stay: "The Hermitage", drive: "Tekapo → Mt Cook", driveTime: "1.2hr", totalTime: "4hr", schedule: { morning: "Pukaki 湖", noon: "Hooker Valley 健行", evening: "隱士飯店夕陽" }, waypoints: [[-44.004, 170.477], [-44.185, 170.151], [-43.734, 170.096]], spots: [{name: "Tekapo", type: "起", pos: [-44.004, 170.477]}, {name: "Peter's Lookout", type: "📷", pos: [-44.185, 170.151]}, {name: "隱士飯店", type: "住", pos: [-43.734, 170.096]}] },
+        { day: 5, title: "東岸看企鵝", stay: "Oamaru", drive: "Mt Cook → Oamaru", driveTime: "2.7hr", totalTime: "5hr", schedule: { morning: "移動至東岸", noon: "莫拉基大圓石", evening: "企鵝歸巢" }, waypoints: [[-43.734, 170.096], [-45.345, 170.826], [-45.097, 170.970]], spots: [{name: "庫克山", type: "起", pos: [-43.734, 170.096]}, {name: "大圓石", type: "📷", pos: [-45.345, 170.826]}, {name: "Oamaru 住宿", type: "住", pos: [-45.097, 170.970]}] },
+        { day: 6, title: "前往 Wanaka", stay: "Edgewater Hotel", drive: "Oamaru → Wanaka", driveTime: "3.2hr", totalTime: "5.5hr", schedule: { morning: "Lindis Pass", noon: "吃高山鮭魚", evening: "Wanaka 夕陽" }, waypoints: [[-45.097, 170.970], [-44.485, 169.987], [-44.694, 169.132]], spots: [{name: "Oamaru", type: "起", pos: [-45.097, 170.970]}, {name: "高山鮭魚", type: "📷", pos: [-44.485, 169.987]}, {name: "Edgewater", type: "住", pos: [-44.694, 169.132]}] },
+        { day: 7, title: "Cardrona 滑雪", stay: "Edgewater Hotel", drive: "Wanaka ↔ Cardrona", driveTime: "1hr", totalTime: "8hr", schedule: { morning: "上山滑雪", noon: "雪場午餐", evening: "回 Wanaka" }, waypoints: [[-44.694, 169.132], [-44.863, 169.004]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "Cardrona", type: "📷", pos: [-44.863, 169.004]}] },
+        { day: 8, title: "Wanaka 自由日", stay: "Edgewater Hotel", drive: "Wanaka", driveTime: "N/A", totalTime: "N/A", schedule: { morning: "睡飽", noon: "瓦納卡樹拍照", evening: "湖邊散步" }, waypoints: [[-44.694, 169.132]], spots: [{name: "瓦納卡樹", type: "📷", pos: [-44.670, 169.110]}] },
+        { day: 9, title: "抵達皇后鎮", stay: "Wyndham Garden QTN", drive: "Wanaka → 皇后鎮", driveTime: "1.5hr", totalTime: "3hr", schedule: { morning: "經箭鎮", noon: "皇后鎮入住", evening: "Fergburger" }, waypoints: [[-44.694, 169.132], [-44.942, 168.835], [-45.031, 168.662]], spots: [{name: "Wanaka", type: "起", pos: [-44.694, 169.132]}, {name: "箭鎮", type: "📷", pos: [-44.942, 168.835]}, {name: "Wyndham Garden", type: "住", pos: [-45.031, 168.662]}] },
+        { day: 10, title: "卓越山滑雪", stay: "Wyndham Garden QTN", drive: "市區 ↔ Remarkables", driveTime: "1hr", totalTime: "8hr", schedule: { morning: "卓越山滑雪", noon: "滑雪/纜車", evening: "市區大餐" }, waypoints: [[-45.031, 168.662], [-45.059, 168.814]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "卓越山", type: "📷", pos: [-45.059, 168.814]}] },
+        { day: 11, title: "格萊諾基", stay: "Wyndham Garden QTN", drive: "QTN ↔ Glenorchy", driveTime: "1.5hr", totalTime: "3hr", schedule: { morning: "湖畔自駕", noon: "碼頭小屋", evening: "皇后鎮夜景" }, waypoints: [[-45.031, 168.662], [-44.850, 168.385]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "紅小屋", type: "📷", pos: [-44.850, 168.385]}] },
+        { day: 12, title: "蒂阿瑙", stay: "Te Anau", drive: "皇后鎮 → Te Anau", driveTime: "2hr", totalTime: "2hr", schedule: { morning: "前往南方", noon: "湖邊休息", evening: "螢火蟲洞" }, waypoints: [[-45.031, 168.662], [-45.414, 167.717]], spots: [{name: "皇后鎮", type: "起", pos: [-45.031, 168.662]}, {name: "Te Anau", type: "住", pos: [-45.414, 167.717]}] },
+        { day: 13, title: "米佛峽灣", stay: "Te Anau", drive: "Te Anau ↔ Milford", driveTime: "4.5hr", totalTime: "11hr", schedule: { morning: "峽灣公路", noon: "峽灣遊船", evening: "圓鱈派" }, waypoints: [[-45.414, 167.717], [-44.939, 168.012], [-44.671, 167.926]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "鏡湖", type: "📷", pos: [-44.939, 168.012]}, {name: "峽灣遊船", type: "📷", pos: [-44.671, 167.926]}] },
+        { day: 14, title: "重返皇后鎮", stay: "Wyndham Garden QTN", drive: "Te Anau → 皇后鎮", driveTime: "2hr", totalTime: "2hr", schedule: { morning: "整理回程", noon: "最後採買", evening: "最後晚餐" }, waypoints: [[-45.414, 167.717], [-45.035, 168.655]], spots: [{name: "Te Anau", type: "起", pos: [-45.414, 167.717]}, {name: "皇后鎮市區", type: "住", pos: [-45.035, 168.655]}] },
+        { day: 15, title: "回台", stay: "家", drive: "ZQN ✈ TPE", driveTime: "12hr+", totalTime: "12hr+", schedule: { morning: "機場報到", noon: "轉機", evening: "抵達" }, waypoints: [[-45.035, 168.655], [-45.018, 168.745]], spots: [{name: "皇后鎮", type: "起", pos: [-45.035, 168.655]}, {name: "機場", type: "✈️", pos: [-45.018, 168.745]}] }
     ];
 
     const map = L.map('map').setView([-44.5, 170.5], 7);
@@ -124,81 +77,54 @@
     let routeControl;
     let markersLayer = L.layerGroup().addTo(map);
 
-    // 總覽按鈕功能
     function showOverview() {
         document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('btn-all').classList.add('active');
         if (routeControl) map.removeControl(routeControl);
         markersLayer.clearLayers();
-
-        document.getElementById('day-content').innerHTML = `
-            <div class="card" style="background:var(--primary); color:white;">
-                <h2 style="margin-top:0;">🌍 2026 紐西蘭 15 天總覽</h2>
-                <p>這是一趟完美的南島逆時針環狀旅行，包含滑雪、健行、峽灣與星空。</p>
-                <hr>
-                <div style="font-size:1.1rem; line-height:1.8;">
-                    ✈️ 機場：3 個標記點<br>
-                    🏠 住宿：7 個核心落腳點<br>
-                    📷 景點：15+ 個推薦停靠點
-                </div>
-            </div>`;
-
-        itinerary.forEach(day => {
-            day.spots.forEach(spot => createCustomMarker(spot));
-        });
+        document.getElementById('day-content').innerHTML = `<div class="card" style="background:var(--primary); color:white;"><h2>🌍 南島 15 天總覽</h2><p>✈️機場 🏠住宿 📷景點</p></div>`;
+        itinerary.forEach(day => day.spots.forEach(spot => createCustomMarker(spot)));
         map.flyTo([-44.5, 170.5], 7);
     }
 
-    // 自定義分類圖標生成
     function createCustomMarker(spot) {
         let color = "var(--spot)";
+        let iconType = spot.type;
         if (spot.type === "✈️") color = "var(--airport)";
-        if (spot.type === "🏠") color = "var(--hotel)";
+        if (spot.type === "住") color = "var(--hotel)";
+        if (spot.type === "起") color = "var(--start)";
 
-        const icon = L.divIcon({
-            className: 'custom-icon',
-            html: `<div class="icon-label" style="border-color:${color}; color:${color};">${spot.type}</div>`,
-            iconSize: [32, 32]
-        });
+        const icon = L.divIcon({ className: 'custom-icon', html: `<div class="icon-label" style="border-color:${color}; color:${color};">${iconType}</div>`, iconSize: [32, 32] });
         L.marker(spot.pos, {icon: icon}).addTo(markersLayer).bindPopup(`<b>${spot.name}</b>`);
     }
 
-    // 分日顯示功能
     function showDay(item, btn) {
         document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-
         document.getElementById('day-content').innerHTML = `
             <div class="card">
-                <h2 style="margin-top:0; color:var(--accent);">Day ${item.day}: ${item.title}</h2>
+                <h2>Day ${item.day}: ${item.title}</h2>
                 <span class="label">🏠 今晚住哪</span><span class="value">${item.stay}</span>
                 <span class="label">🚗 移動路線</span><span class="value">${item.drive}</span>
-                <span class="label">⏱️ 時間 (純開車/含拍照)</span><span class="value">${item.driveTime} / ${item.totalTime}</span>
-                
+                <span class="label">⏱️ 時間</span><span class="value">${item.driveTime} / ${item.totalTime}</span>
                 <div class="sch-box">
                     <div class="sch-item"><span class="sch-tag">早上</span>${item.schedule.morning}</div>
                     <div class="sch-item"><span class="sch-tag">中午</span>${item.schedule.noon}</div>
                     <div class="sch-item"><span class="sch-tag">晚上</span>${item.schedule.evening}</div>
                 </div>
             </div>`;
-
         markersLayer.clearLayers();
         item.spots.forEach(spot => createCustomMarker(spot));
-
         if (routeControl) map.removeControl(routeControl);
         if (item.waypoints.length > 1) {
             routeControl = L.Routing.control({
                 waypoints: item.waypoints.map(p => L.latLng(p[0], p[1])),
-                lineOptions: { styles: [{ color: 'var(--accent)', weight: 6, opacity: 0.8 }] },
-                createMarker: () => null,
-                addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false
+                lineOptions: { styles: [{ color: 'var(--accent)', weight: 6 }] },
+                createMarker: () => null, addWaypoints: false, draggableWaypoints: false, fitSelectedRoutes: true, show: false
             }).addTo(map);
-        } else {
-            map.flyTo(item.waypoints[0], 11);
-        }
+        } else { map.flyTo(item.waypoints[0], 11); }
     }
 
-    // 自動生成 Day 按鈕
     const selector = document.getElementById('day-selector');
     itinerary.forEach(item => {
         const btn = document.createElement('button');
@@ -207,7 +133,6 @@
         selector.appendChild(btn);
     });
 
-    // 啟動顯示總覽
     window.onload = showOverview;
 </script>
 </body>
